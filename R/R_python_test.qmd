@@ -1,0 +1,80 @@
+---
+title: "R and python test"
+date: today
+
+execute:
+  eval: true # by default is true, runs the code in each chunck 
+  echo: true
+  warning: false
+  message: false
+  
+format: 
+  html:
+    code-fold: true # sets all code chunks are collapsed by default
+    code-summary: "Show the code"
+    toc: true # shows/includes an automatically generated table of contents 
+    toc-location: left
+    number-sections: true
+ 
+editor: visual
+---
+
+# Introduction
+
+This document is a test/exercise to run <b>R</b> and <b>Python </b> code in the <b>same</b> Quarto file. 
+
+I will perform linear regressions using data from [Body Fat Data](https://hbiostat.org/data/) that is found in the book [Regression Modeling Strategies](https://hbiostat.org/rmsc/) by [Frank E Harrell Jr](https://hbiostat.org/)
+
+
+Install and load packages
+```{r}
+# Install and load packages
+
+# First check if pacman is installed
+if (!requireNamespace("pacman", quietly = TRUE)) {
+    message("📦 'pacman' not found — installing...")
+    install.packages("pacman")
+  }
+
+
+pacman::p_load(
+  reticulate, # Allows working with Python inside R
+  readr,
+  here, # relative file pathways 
+  tidyverse # data management and visualization
+  )
+
+
+```
+
+
+Load the Data
+```{r}
+# Load data 
+df <- read_csv(here("Input", "Data", "bodyfat.csv"))
+summary(df)
+```
+
+# Linear Regression model using **R**
+```{r}
+lm_r <- lm(Height ~ Age + Wrist + Knee + Ankle, data = df)
+summary(lm_r)
+```
+
+# Linear Regression model using **Python**
+```{python}
+
+import statsmodels.api as sm
+
+# R data frame -> pandas DataFrame
+df_py = r.df
+
+# choose predictors + outcome 
+X = df_py[["Age", "Wrist", "Knee","Ankle"]]   
+X = sm.add_constant(X)         # adds intercept
+y = df_py["Height"]
+
+lm_py = sm.OLS(y, X).fit()
+print(lm.py.summary())
+```
+
