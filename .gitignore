@@ -1,14 +1,18 @@
+# R
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
 
 
-# Ignore all rendered HTML files
+# Quarto / R Markdown outputs
 *.html
-
-# Ignore all Quarto execution folders
+*.pdf
 *_files/
+_cache/
+.Rcheck/
 
-# Ignore all libraries inside those folders
-*_files/**/libs/
+
+# Config / secrets
+.Renviron
+.env

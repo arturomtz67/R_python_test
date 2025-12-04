@@ -17,13 +17,15 @@ format:
     number-sections: true
  
 editor: visual
+
+fig-cap-location: margin
 ---
 
 # Introduction
 
 This document is a test/exercise to run <b>R</b> and <b>Python </b> code in the <b>same</b> Quarto file.
 
-I will perform linear regressions using data from [Body Fat Data](https://hbiostat.org/data/) that is found in the book [Regression Modeling Strategies](https://hbiostat.org/rmsc/) by [Frank E Harrell Jr](https://hbiostat.org/)
+I will perform linear regressions using data from [Body Fat Data](https://hbiostat.org/data/) that is found in the book [Regression Modeling Strategies](https://hbiostat.org/rmsc/) by [Frank E Harrell Jr](https://hbiostat.org/). I will check assumptions but it is only to practice, will not adjust models based on the results/interpretation of the assumptions.
 
 Install and load packages
 
@@ -32,25 +34,24 @@ Install and load packages
 
 # First check if pacman is installed
 if (!requireNamespace("pacman", quietly = TRUE)) {
-    message("📦 'pacman' not found — installing...")
-    install.packages("pacman")
-  }
+  message("📦 'pacman' not found — installing...")
+  install.packages("pacman")
+}
 
 
 pacman::p_load(
   reticulate, # Allows working with Python inside R
   readr,
-  here, # relative file pathways 
-  tidyverse # data management and visualization
- )
-
-
+  here, # relative file pathways
+  tidyverse, # data management and visualization
+  easystats # Easy Statistical Modeling, Visualization, and Reporting
+)
 ```
 
 Load the Data
 
 ```{r}
-# Load data 
+# Load data
 df <- read_csv(here("Input", "Data", "bodyfat.csv"))
 summary(df)
 ```
@@ -60,24 +61,91 @@ summary(df)
 ```{r}
 lm_r <- lm(Height ~ Age + Wrist + Knee + Ankle, data = df)
 summary(lm_r)
+check_model(lm_r)
+check_n <- check_normality(lm_r)
+
+plot(check_n, type = "qq")
+
+
 ```
 
 # **Python** Linear Regression
 
 ```{python}
+#| layout-ncol: 2  # shows plots/figures in two columns 
 
 import pandas as pd
+import numpy as np
 import statsmodels.api as sm
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 # Convert the R dataframe to a pandas DataFrame
 df_py = pd.DataFrame(r.df)
 
 # choose predictors + outcome 
 X = df_py[["Age", "Wrist", "Knee","Ankle"]]
-type(df_py)
 X = sm.add_constant(X)  # adds intercept
 y = df_py["Height"]
 
 lm_py = sm.OLS(y, X).fit()
 print(lm_py.summary())
+
+# Checking assumptions
+fitted = lm_py.fittedvalues
+residuals = lm_py.resid
+plt.scatter(fitted, residuals)
+plt.axhline(0, color = "red")
+plt.xlabel("Fitted values")
+plt.ylabel("Residuals")
+plt.title("Residuals vs Fitted")
+plt.show()
+
+sns.histplot(residuals, kde = True)
+plt.title("Residual Distribution")
+plt.show()
+
+sm.qqplot(residuals, line='45', fit=True)
+plt.title("Q–Q Plot")
+plt.show()
+
+influence = lm_py.get_influence()
+cooks = influence.cooks_distance[0]
+
+plt.stem(np.arange(len(cooks)), cooks, markerfmt=",")
+plt.title("Cook's Distance")
+plt.show()
+```
+
+# SHAP values
+
+Here I use the **NHANES I Survival Model** to practice using SHAP values. The information about the example can be found in the next paragraph.
+
+This is a cox proportional hazards model on data from [NHANES I](https://wwwn.cdc.gov/nchs/nhanes/nhanes1) with followup mortality data from the [NHANES I Epidemiologic Followup Study](https://wwwn.cdc.gov/nchs/nhanes/nhefs). It is designed to illustrate how SHAP values enable the interpretion of XGBoost models with a clarity traditionally only provided by linear models. 
+
+```{python}
+
+import xgboost
+from sklearn.model_selection import train_test_split
+import shap 
+plt.close('all')          # close any previous figures
+plt.figure()              # start a brand new figure
+
+
+X_nhanes, y_nhanes = shap.datasets.nhanesi()
+
+sns.histplot(X_nhanes["age"], kde=True)
+plt.show()
+
+# human readable feature values
+X_display, y_display = shap.datasets.nhanesi(display=True)
+
+xgb_full = xgboost.DMatrix(X, label=y)
+
+# create a train/test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=7)
+xgb_train = xgboost.DMatrix(X_train, label=y_train)
+xgb_test = xgboost.DMatrix(X_test, label=y_test)
+
 ```
