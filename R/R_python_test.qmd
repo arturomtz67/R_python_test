@@ -252,3 +252,14 @@ shap_values = shap.TreeExplainer(model).shap_values(X_nhanes)
 shap.summary_plot(shap_values, X_nhanes)
 ```
 
+```{python, fig.cap="The plot shows that mortality risk increases steadily with age, and the risk is amplified for individuals with higher systolic blood pressure.."}
+
+shap.dependence_plot("age", shap_values, X_nhanes, interaction_index="systolic_blood_pressure")
+```
+
+```{python}
+shap.dependence_plot("bmi", shap_values, X_nhanes, display_features=X_display, show=False)
+plt.xlim(15, 55)
+plt.show()
+```
+
